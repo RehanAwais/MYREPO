@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creative Mini Calc</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .calculator {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            color: white;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        .expression {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            min-height: 25px;
+            overflow: hidden;
+        }
+        
+        .result {
+            font-size: 2.5rem;
+            font-weight: 300;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        .btn {
+            height: 65px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:active { transform: scale(0.95); }
+        
+        .number { background: rgba(255, 255, 255, 0.1); }
+        .number:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        .operator { background: rgba(255, 107, 107, 0.8); }
+        .operator:hover { background: rgba(255, 107, 107, 1); }
+        
+        .equals { 
+            background: rgba(85, 239, 196, 0.8); 
+            color: #333;
+        }
+        .equals:hover { background: rgba(85, 239, 196, 1); }
+        
+        .clear { background: rgba(255, 159, 67, 0.8); }
+        .clear:hover { background: rgba(255, 159, 67, 1); }
+        
+        .constant { 
+            background: rgba(155, 89, 182, 0.8);
+            font-size: 1.1rem;
+        }
+        .constant:hover { background: rgba(155, 89, 182, 1); }
+        
+        .title {
+            text-align: center;
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            font-weight: 300;
+        }
+        
+        .title span {
+            color: #55efc4;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1 class="title">Simple <span>Calculator</span></h1>
+        
+        <div class="display">
+            <div class="expression" id="expression"></div>
+            <div class="result" id="result">0</div>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn clear" onclick="clearCalc()">C</button>
+            <button class="btn clear" onclick="backspace()">⌫</button>
+            <button class="btn constant" onclick="insertE()">e</button>
+            <button class="btn operator" onclick="appendOperator('÷')">÷</button>
+            
+            <button class="btn number" onclick="appendNumber('7')">7</button>
+            <button class="btn number" onclick="appendNumber('8')">8</button>
+            <button class="btn number" onclick="appendNumber('9')">9</button>
+            <button class="btn operator" onclick="appendOperator('×')">×</button>
+            
+            <button class="btn number" onclick="appendNumber('4')">4</button>
+            <button class="btn number" onclick="appendNumber('5')">5</button>
+            <button class="btn number" onclick="appendNumber('6')">6</button>
+            <button class="btn operator" onclick="appendOperator('-')">-</button>
+            
+            <button class="btn number" onclick="appendNumber('1')">1</button>
+            <button class="btn number" onclick="appendNumber('2')">2</button>
+            <button class="btn number" onclick="appendNumber('3')">3</button>
+            <button class="btn operator" onclick="appendOperator('+')">+</button>
+            
+            <button class="btn number" onclick="appendNumber('0')">0</button>
+            <button class="btn number" onclick="appendDecimal()">.</button>
+            <button class="btn constant" onclick="insertPi()">π</button>
+            <button class="btn equals" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        let current = '0';
+        let previous = '';
+        let operator = null;
+        let resetScreen = false;
+        
+        const result = document.getElementById('result');
+        const expression = document.getElementById('expression');
+        
+        function updateDisplay() {
+            result.textContent = current;
+            expression.textContent = previous + (operator ? ' ' + operator : '');
+        }
+        
+        function appendNumber(num) {
+            if (current === '0' || resetScreen) {
+                current = num;
+                resetScreen = false;
+            } else {
+                current += num;
+            }
+            updateDisplay();
+        }
+        
+        function appendDecimal() {
+            if (resetScreen) {
+                current = '0.';
+                resetScreen = false;
+            } else if (!current.includes('.')) {
+                current += '.';
+            }
+            updateDisplay();
+        }
+        
+        function appendOperator(op) {
+            if (operator !== null) calculate();
+            previous = current;
+            operator = op;
+            resetScreen = true;
+            updateDisplay();
+        }
+        
+        function calculate() {
+            let computation;
+            const prev = parseFloat(previous);
+            const curr = parseFloat(current);
+            
+            if (isNaN(prev) || isNaN(curr)) return;
+            
+            switch (operator) {
+                case '+': computation = prev + curr; break;
+                case '-': computation = prev - curr; break;
+                case '×': computation = prev * curr; break;
+                case '÷': computation = prev / curr; break;
+                default: return;
+            }
+            
+            current = Number.isInteger(computation) ? 
+                computation.toString() : 
+                parseFloat(computation.toFixed(10)).toString();
+            operator = null;
+            previous = '';
+            resetScreen = true;
+            updateDisplay();
+        }
+        
+        function clearCalc() {
+            current = '0';
+            previous = '';
+            operator = null;
+            updateDisplay();
+        }
+        
+        function backspace() {
+            if (current.length > 1) {
+                current = current.slice(0, -1);
+            } else {
+                current = '0';
+            }
+            updateDisplay();
+        }
+        
+        function insertE() {
+            current = Math.E.toString().slice(0, 10);
+            resetScreen = true;
+            updateDisplay();
+        }
+        
+        function insertPi() {
+            current = Math.PI.toString().slice(0, 10);
+            resetScreen = true;
+            updateDisplay();
+        }
+        
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
+            else if (e.key === '.') appendDecimal();
+            else if (e.key === '+' || e.key === '-') appendOperator(e.key);
+            else if (e.key === '*') appendOperator('×');
+            else if (e.key === '/') appendOperator('÷');
+            else if (e.key === 'Enter' || e.key === '=') calculate();
+            else if (e.key === 'Escape') clearCalc();
+            else if (e.key === 'Backspace') backspace();
+            else if (e.key === 'e') insertE();
+            else if (e.key === 'p') insertPi();
+        });
+        
+        updateDisplay();
+    </script>
+</body>
+</html>
